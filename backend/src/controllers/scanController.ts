@@ -76,8 +76,9 @@ export const getVehicleForScan = async (req: Request, res: Response): Promise<vo
     res.json({
       success: true,
       data: {
-        vehicleId: vehicle.id,
-        carNumber: vehicle.carNumber,
+        vehicle_id: vehicle.id,
+        car_number: vehicle.carNumber,
+        is_active: vehicle.isActive,
         // Explicitly NOT including:
         // - userId (owner information)
         // - qrUrl (not needed for scan page)

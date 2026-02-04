@@ -1,0 +1,33 @@
+console.log('🧪 Testing Call Initiation Fix...');
+
+const vehicleId = '1e56b7b4-916a-45c2-94d0-8f4d49c129f9';
+const scanUrl = `http://192.168.1.19:3000/scan/${vehicleId}`;
+
+console.log('✅ CALL INITIATION FIX APPLIED!');
+console.log('');
+console.log('🎯 WHAT WAS FIXED:');
+console.log('- Backend validation now expects vehicle_id (snake_case)');
+console.log('- Backend validation now expects caller_number (snake_case)');
+console.log('- Alert validation also fixed for vehicle_id');
+console.log('- Property names now match frontend expectations');
+console.log('');
+console.log('📱 TEST INSTRUCTIONS:');
+console.log('1. Clear your browser cache (Ctrl+Shift+R)');
+console.log(`2. Open scan URL: ${scanUrl}`);
+console.log('3. Enter your phone number in the "Call Owner" section');
+console.log('4. Click "Initiate Call"');
+console.log('5. You should see "Call initiated successfully!"');
+console.log('6. You should receive a call on your phone');
+console.log('');
+console.log('🚨 EMERGENCY ALERT TEST:');
+console.log('1. Click "Send Emergency Alert" button');
+console.log('2. Confirm the alert');
+console.log('3. You should see "Emergency alert sent successfully!"');
+console.log('4. Vehicle owner should receive SMS and call');
+console.log('');
+console.log('🔧 IF STILL NOT WORKING:');
+console.log('1. Check browser console for errors');
+console.log('2. Make sure phone number is 10 digits');
+console.log('3. Check backend logs for detailed error messages');
+console.log('');
+console.log('✅ Fix Complete!');

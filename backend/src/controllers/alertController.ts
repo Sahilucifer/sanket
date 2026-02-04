@@ -6,9 +6,10 @@ import Joi from 'joi';
 
 // Validation schemas
 const emergencyAlertSchema = Joi.object({
-  vehicleId: Joi.string().uuid().required(),
+  vehicle_id: Joi.string().uuid().required(),
   templateId: Joi.string().optional(),
   customMessage: Joi.string().max(500).optional(),
+  message: Joi.string().max(500).optional(),
   customizations: Joi.object({
     vehicleInfo: Joi.string().max(100).optional(),
     location: Joi.string().max(200).optional(),
@@ -54,7 +55,7 @@ export class AlertController {
         return;
       }
 
-      const { vehicleId, templateId, customMessage, customizations } = value;
+      const { vehicle_id: vehicleId, templateId, customMessage, message, customizations } = value;
 
       // Validate custom message if provided
       if (customMessage) {
@@ -79,7 +80,8 @@ export class AlertController {
       }
 
       // Send emergency alert
-      const result = await alertService.sendEmergencyAlert(vehicleId, templateId, customMessage, customizations);
+      const finalMessage = customMessage || message;
+      const result = await alertService.sendEmergencyAlert(vehicleId, templateId, finalMessage, customizations);
 
       if (result.status === 'sent') {
         logger.info('Emergency alert sent successfully', {

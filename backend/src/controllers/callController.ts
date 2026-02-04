@@ -4,17 +4,17 @@ import { callService } from '../services/callService';
 import { vehicleService } from '../services/vehicleService';
 import { logger } from '../utils/logger';
 import { ApiResponse, CallResult } from '../types';
-import { supabase } from '../config/database';
+import { supabase, supabaseAdmin } from '../config/database';
 import { twilioService } from '../services/twilioService';
 
 // Validation schemas
 const initiateCallSchema = Joi.object({
-  vehicleId: Joi.string().uuid().required(),
-  callerNumber: Joi.string()
-    .pattern(/^\+?[1-9]\d{1,14}$/)
+  vehicle_id: Joi.string().uuid().required(),
+  caller_number: Joi.string()
+    .pattern(/^\+?[1-9]\d{8,14}$/)
     .required()
     .messages({
-      'string.pattern.base': 'Invalid phone number format'
+      'string.pattern.base': 'Invalid phone number format. Please use format: +919557352327 or 9557352327'
     }),
 });
 
@@ -38,7 +38,7 @@ export class CallController {
         return;
       }
 
-      const { vehicleId, callerNumber } = value;
+      const { vehicle_id: vehicleId, caller_number: callerNumber } = value;
 
       logger.info('Call initiation request received', {
         vehicleId,
@@ -61,7 +61,7 @@ export class CallController {
       }
 
       // Get owner phone number
-      const { data: user, error: userError } = await supabase
+      const { data: user, error: userError } = await supabaseAdmin
         .from('users')
         .select('phone')
         .eq('id', vehicle.userId)
@@ -105,7 +105,7 @@ export class CallController {
         created_at: new Date().toISOString()
       };
 
-      const { error: logError } = await supabase
+      const { error: logError } = await supabaseAdmin
         .from('call_logs')
         .insert([callLogData]);
 
@@ -199,7 +199,7 @@ export class CallController {
         updateData.ended_at = new Date(webhookData.EndTime).toISOString();
       }
 
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('call_logs')
         .update(updateData)
         .eq('call_sid', webhookData.CallSid);
@@ -275,7 +275,7 @@ export class CallController {
         updateData.ended_at = new Date(webhookData.EndTime).toISOString();
       }
 
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('call_logs')
         .update(updateData)
         .eq('call_sid', webhookData.CallSid);
@@ -369,7 +369,7 @@ export class CallController {
       }
 
       // Get call logs (without exposing phone numbers)
-      const { data: callLogs, error } = await supabase
+      const { data: callLogs, error } = await supabaseAdmin
         .from('call_logs')
         .select(`
           id,

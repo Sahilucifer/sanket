@@ -67,9 +67,17 @@ export class ScanService {
 
   // Validate phone number format
   static validatePhoneNumber(phone: string): boolean {
-    // Basic phone number validation (10 digits)
-    const phoneRegex = /^\d{10}$/;
-    return phoneRegex.test(phone.replace(/\D/g, ''));
+    // Support both Indian format (10 digits) and international format (+91xxxxxxxxxx)
+    const cleaned = phone.replace(/\D/g, '');
+    
+    // Check for 10-digit Indian number or 12-digit with country code (91xxxxxxxxxx)
+    if (cleaned.length === 10) {
+      return /^[6-9]\d{9}$/.test(cleaned); // Indian mobile numbers start with 6-9
+    } else if (cleaned.length === 12 && cleaned.startsWith('91')) {
+      return /^91[6-9]\d{9}$/.test(cleaned); // +91 followed by valid Indian mobile
+    }
+    
+    return false;
   }
 
   // Format phone number for display

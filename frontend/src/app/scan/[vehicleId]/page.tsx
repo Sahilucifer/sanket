@@ -40,15 +40,31 @@ export default function ScanPage() {
     e.preventDefault();
     if (!callerPhone.trim()) return;
 
+    // Format phone number for Indian numbers
+    let formattedPhone = callerPhone.trim();
+    
+    // Remove all non-digits
+    const digitsOnly = formattedPhone.replace(/\D/g, '');
+    
+    // If it's a 10-digit number, add +91 prefix
+    if (digitsOnly.length === 10 && digitsOnly.match(/^[6-9]/)) {
+      formattedPhone = `+91${digitsOnly}`;
+    } else if (digitsOnly.length === 12 && digitsOnly.startsWith('91')) {
+      formattedPhone = `+${digitsOnly}`;
+    } else if (!formattedPhone.startsWith('+')) {
+      // If it doesn't start with +, add it
+      formattedPhone = `+${digitsOnly}`;
+    }
+
     // Validate phone number
-    if (!ScanService.validatePhoneNumber(callerPhone)) {
-      alert('Please enter a valid 10-digit phone number');
+    if (!ScanService.validatePhoneNumber(formattedPhone)) {
+      alert('Please enter a valid Indian mobile number (10 digits starting with 6-9)');
       return;
     }
 
     setIsInitiatingCall(true);
     try {
-      const result = await ScanService.initiateCall(vehicleId, callerPhone.trim());
+      const result = await ScanService.initiateCall(vehicleId, formattedPhone);
       setCallSuccess(true);
       setShowCallForm(false);
       setCallerPhone('');
@@ -225,11 +241,11 @@ export default function ScanPage() {
                         value={callerPhone}
                         onChange={(e) => setCallerPhone(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="1234567890"
+                        placeholder="9557352327 or +919557352327"
                         required
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        We'll call you first, then connect you to the owner
+                        Enter your Indian mobile number. We'll call you first, then connect you to the owner.
                       </p>
                     </div>
                     <div className="flex space-x-3">
