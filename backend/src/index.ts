@@ -8,11 +8,14 @@ import rateLimit from 'express-rate-limit';
 // Load environment variables
 dotenv.config();
 
-// Ensure FRONTEND_URL is set for QR code generation
-if (!process.env.FRONTEND_URL) {
-  process.env.FRONTEND_URL = 'http://localhost:3000';
-  console.log('FRONTEND_URL not set, defaulting to http://localhost:3000');
-}
+// Debug environment variables
+console.log('Environment variables loaded:');
+console.log('FRONTEND_URL from env:', process.env.FRONTEND_URL);
+console.log('All env keys containing FRONTEND:', Object.keys(process.env).filter(key => key.includes('FRONTEND')));
+
+// Manually set FRONTEND_URL for now
+process.env.FRONTEND_URL = 'http://192.168.1.19:3000';
+console.log('FRONTEND_URL manually set to:', process.env.FRONTEND_URL);
 
 import { logger } from './utils/logger';
 import { errorHandler } from './middleware/errorHandler';
@@ -52,7 +55,11 @@ const initializeApp = async () => {
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: [
+    'http://localhost:3000',
+    'http://192.168.1.19:3000',
+    process.env.FRONTEND_URL || 'http://localhost:3000'
+  ],
   credentials: true,
 }));
 
