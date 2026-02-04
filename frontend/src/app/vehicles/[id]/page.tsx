@@ -12,6 +12,7 @@ export default function VehicleDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [isRegeneratingQR, setIsRegeneratingQR] = useState(false);
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const router = useRouter();
   const params = useParams();
   const vehicleId = params.id as string;
@@ -33,15 +34,46 @@ export default function VehicleDetailsPage() {
     }
   };
 
-  const handleDownloadQR = () => {
+  const showNotification = (message: string, type: 'success' | 'error') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 5000);
+  };
+
+  const handleDownloadQR = async () => {
     if (!vehicle?.qrUrl) return;
 
-    const link = document.createElement('a');
-    link.href = vehicle.qrUrl;
-    link.download = `qr-code-${vehicle.carNumber}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      // Add timestamp to prevent caching issues
+      const qrUrlWithTimestamp = `${vehicle.qrUrl}?t=${Date.now()}`;
+      
+      // Fetch the image to handle CORS issues
+      const response = await fetch(qrUrlWithTimestamp);
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `qr-code-${vehicle.carNumber}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the object URL
+      window.URL.revokeObjectURL(url);
+      showNotification('QR code downloaded successfully!', 'success');
+    } catch (error) {
+      console.error('Error downloading QR code:', error);
+      // Fallback to direct link
+      const link = document.createElement('a');
+      link.href = vehicle.qrUrl;
+      link.download = `qr-code-${vehicle.carNumber}.png`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showNotification('QR code download initiated (fallback method)', 'success');
+    }
   };
 
   const handleRegenerateQR = async () => {
@@ -54,10 +86,13 @@ export default function VehicleDetailsPage() {
       // Update the vehicle with the new QR URL
       setVehicle(prev => prev ? { ...prev, qrUrl: result.qrUrl } : null);
       
+      // Also refresh the vehicle data to ensure we have the latest info
+      await fetchVehicle();
+      
       // Show success message
-      alert('QR code regenerated successfully!');
+      showNotification('QR code regenerated successfully!', 'success');
     } catch (err: any) {
-      alert('Error regenerating QR code: ' + err.message);
+      showNotification('Error regenerating QR code: ' + err.message, 'error');
     } finally {
       setIsRegeneratingQR(false);
     }
@@ -71,8 +106,12 @@ export default function VehicleDetailsPage() {
         isActive: !vehicle.isActive,
       });
       setVehicle(updatedVehicle);
+      showNotification(
+        `Vehicle ${updatedVehicle.isActive ? 'activated' : 'deactivated'} successfully!`, 
+        'success'
+      );
     } catch (err: any) {
-      alert('Error updating vehicle: ' + err.message);
+      showNotification('Error updating vehicle: ' + err.message, 'error');
     }
   };
 
@@ -131,6 +170,42 @@ export default function VehicleDetailsPage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
+        {/* Notification */}
+        {notification && (
+          <div className={`fixed top-4 right-4 z-50 p-4 rounded-md shadow-lg ${
+            notification.type === 'success' 
+              ? 'bg-green-100 border border-green-400 text-green-700' 
+              : 'bg-red-100 border border-red-400 text-red-700'
+          }`}>
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                {notification.type === 'success' ? (
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium">{notification.message}</p>
+              </div>
+              <div className="ml-auto pl-3">
+                <button
+                  onClick={() => setNotification(null)}
+                  className="inline-flex text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <header className="bg-white shadow">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -163,9 +238,16 @@ export default function VehicleDetailsPage() {
                   <div className="text-center">
                     <div className="inline-block p-4 bg-white border-2 border-gray-200 rounded-lg">
                       <img
-                        src={vehicle.qrUrl}
+                        src={`${vehicle.qrUrl}?t=${Date.now()}`}
                         alt={`QR Code for ${vehicle.carNumber}`}
                         className="w-48 h-48 mx-auto"
+                        onError={(e) => {
+                          // If image fails to load, try without timestamp
+                          const target = e.target as HTMLImageElement;
+                          if (target.src.includes('?t=')) {
+                            target.src = vehicle.qrUrl!;
+                          }
+                        }}
                       />
                     </div>
                     
@@ -175,6 +257,12 @@ export default function VehicleDetailsPage() {
                         className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors w-full"
                       >
                         Download QR Code
+                      </button>
+                      <button
+                        onClick={() => window.open(vehicle.qrUrl!, '_blank')}
+                        className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors w-full"
+                      >
+                        View QR Code
                       </button>
                       <button
                         onClick={handleRegenerateQR}
