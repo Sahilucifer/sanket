@@ -80,18 +80,33 @@ export class AuthService {
       });
 
       // Send OTP via Twilio SMS
+      let smsSuccess = false;
       try {
         const message = `Your verification code is: ${otp}. This code will expire in 10 minutes.`;
-        await this.twilioService.sendSMS(normalizedPhone, message);
-        logger.info(`OTP sent via SMS to phone: ${normalizedPhone}`);
-        // For development - log OTP temporarily
-        if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
-          logger.info(`DEBUG - OTP for ${normalizedPhone}: ${otp}`);
+        const smsResult = await this.twilioService.sendSMS(normalizedPhone, message);
+        
+        if (smsResult.success) {
+          logger.info(`OTP sent via SMS to phone: ${normalizedPhone}`);
+          smsSuccess = true;
+        } else {
+          throw new Error(smsResult.error || 'SMS sending failed');
         }
-      } catch (smsError) {
+      } catch (smsError: any) {
         logger.error(`Failed to send SMS to ${normalizedPhone}:`, smsError);
-        // For development, still log the OTP if SMS fails
-        logger.info(`OTP for ${normalizedPhone}: ${otp} (SMS failed, showing for development)`);
+        
+        // For development/test environments, still allow OTP verification even if SMS fails
+        if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
+          logger.info(`OTP for ${normalizedPhone}: ${otp} (SMS failed, showing for development)`);
+          smsSuccess = true; // Allow development testing
+        } else {
+          // In production, SMS failure should be treated as an error
+          throw new Error('Failed to send OTP via SMS. Please try again or contact support.');
+        }
+      }
+
+      // Always log OTP in development for testing
+      if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
+        logger.info(`DEBUG - OTP for ${normalizedPhone}: ${otp}`);
       }
       
       return {
@@ -151,18 +166,33 @@ export class AuthService {
       });
 
       // Send OTP via Twilio SMS
+      let smsSuccess = false;
       try {
         const message = `Your verification code is: ${otp}. This code will expire in 10 minutes.`;
-        await this.twilioService.sendSMS(normalizedPhone, message);
-        logger.info(`Registration OTP sent via SMS to phone: ${normalizedPhone}`);
-        // For development - log OTP temporarily
-        if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
-          logger.info(`DEBUG - Registration OTP for ${normalizedPhone}: ${otp}`);
+        const smsResult = await this.twilioService.sendSMS(normalizedPhone, message);
+        
+        if (smsResult.success) {
+          logger.info(`Registration OTP sent via SMS to phone: ${normalizedPhone}`);
+          smsSuccess = true;
+        } else {
+          throw new Error(smsResult.error || 'SMS sending failed');
         }
-      } catch (smsError) {
+      } catch (smsError: any) {
         logger.error(`Failed to send registration SMS to ${normalizedPhone}:`, smsError);
-        // For development, still log the OTP if SMS fails
-        logger.info(`OTP for ${normalizedPhone}: ${otp} (SMS failed, showing for development)`);
+        
+        // For development/test environments, still allow OTP verification even if SMS fails
+        if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
+          logger.info(`Registration OTP for ${normalizedPhone}: ${otp} (SMS failed, showing for development)`);
+          smsSuccess = true; // Allow development testing
+        } else {
+          // In production, SMS failure should be treated as an error
+          throw new Error('Failed to send OTP via SMS. Please try again or contact support.');
+        }
+      }
+
+      // Always log OTP in development for testing
+      if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
+        logger.info(`DEBUG - Registration OTP for ${normalizedPhone}: ${otp}`);
       }
       
       return {

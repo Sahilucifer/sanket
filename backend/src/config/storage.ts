@@ -1,4 +1,4 @@
-import { supabase } from './database';
+import { supabaseAdmin } from './database';
 import { logger } from '../utils/logger';
 
 const STORAGE_BUCKET = 'qr-codes';
@@ -6,8 +6,8 @@ const STORAGE_BUCKET = 'qr-codes';
 // Initialize storage bucket
 export const initializeStorage = async (): Promise<void> => {
   try {
-    // Check if bucket exists
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    // Check if bucket exists using admin client
+    const { data: buckets, error: listError } = await supabaseAdmin.storage.listBuckets();
     
     if (listError) {
       logger.error('Error listing storage buckets:', listError);
@@ -17,8 +17,8 @@ export const initializeStorage = async (): Promise<void> => {
     const bucketExists = buckets?.some(bucket => bucket.name === STORAGE_BUCKET);
 
     if (!bucketExists) {
-      // Create bucket if it doesn't exist
-      const { error: createError } = await supabase.storage.createBucket(STORAGE_BUCKET, {
+      // Create bucket if it doesn't exist using admin client
+      const { error: createError } = await supabaseAdmin.storage.createBucket(STORAGE_BUCKET, {
         public: true,
         allowedMimeTypes: ['image/png', 'image/jpeg'],
         fileSizeLimit: 1024 * 1024, // 1MB
@@ -48,7 +48,8 @@ export const uploadQRCode = async (
     const fileName = `${vehicleId}.png`;
     const filePath = `qr-codes/${fileName}`;
 
-    const { error } = await supabase.storage
+    // Use admin client for upload to bypass RLS
+    const { error } = await supabaseAdmin.storage
       .from(STORAGE_BUCKET)
       .upload(filePath, imageBuffer, {
         contentType,
@@ -60,8 +61,8 @@ export const uploadQRCode = async (
       return null;
     }
 
-    // Get public URL
-    const { data } = supabase.storage
+    // Get public URL using admin client
+    const { data } = supabaseAdmin.storage
       .from(STORAGE_BUCKET)
       .getPublicUrl(filePath);
 
@@ -77,7 +78,8 @@ export const deleteQRCode = async (vehicleId: string): Promise<boolean> => {
   try {
     const filePath = `qr-codes/${vehicleId}.png`;
 
-    const { error } = await supabase.storage
+    // Use admin client for delete to bypass RLS
+    const { error } = await supabaseAdmin.storage
       .from(STORAGE_BUCKET)
       .remove([filePath]);
 
